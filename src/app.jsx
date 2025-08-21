@@ -7,17 +7,25 @@ function App() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [posts, setPosts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(5); // posts per page
+  const [totalPosts, setTotalPosts] = useState(0);
 
   const BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    fetchPosts(page);
+  }, [page]);
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (currentPage = 1) => {
     try {
       const res = await axios.get(`${BASE_URL}/posts/all`);
-      setPosts(res.data);
+      setTotalPosts(res.data.length);
+
+      // Frontend pagination: slice posts for current page
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      setPosts(res.data.slice(start, end));
     } catch (error) {
       console.error("Error fetching posts:", error);
     }
@@ -53,11 +61,13 @@ function App() {
       setContent("");
       setImage(null);
       setPreview(null);
-      fetchPosts(); // Refresh posts
+      fetchPosts(page); // Refresh posts
     } catch (error) {
       console.error("Error creating post:", error);
     }
   };
+
+  const totalPages = Math.ceil(totalPosts / pageSize);
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "20px" }}>
@@ -145,6 +155,41 @@ function App() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* Pagination */}
+      <div style={{ display: "flex", justifyContent: "center", gap: "15px", marginTop: "20px" }}>
+        <button
+          onClick={() => setPage((p) => Math.max(p - 1, 1))}
+          disabled={page === 1}
+          style={{ padding: "8px 12px", borderRadius: "5px", cursor: "pointer" }}
+        >
+          Previous
+        </button>
+        <span style={{ padding: "8px 12px" }}>
+          {page} / {totalPages}
+        </span>
+        <button
+          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+          disabled={page === totalPages}
+          style={{ padding: "8px 12px", borderRadius: "5px", cursor: "pointer" }}
+        >
+          Next
+        </button>
+      </div>
+
+      {/* Favorite Song Section */}
+      <div style={{ marginTop: "40px", textAlign: "center" }}>
+        <h2>🎶 My Favorite Song</h2>
+        <iframe
+          width="560"
+          height="315"
+          src="https://www.youtube.com/embed/PChRVIbU1-Q?autoplay=0&rel=0"
+          title="YouTube video player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ border: "0", borderRadius: "10px", marginTop: "15px" }}
+        ></iframe>
       </div>
     </div>
   );
