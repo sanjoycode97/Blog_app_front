@@ -5,9 +5,9 @@ function App() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [posts, setPosts] = useState([]);
 
-  // ✅ Use environment variable instead of hardcoding
   const BASE_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -16,15 +16,28 @@ function App() {
 
   const fetchPosts = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/posts/`);
+      const res = await axios.get(`${BASE_URL}/posts/all`);
       setPosts(res.data);
     } catch (error) {
       console.error("Error fetching posts:", error);
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    setImage(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!title || !content) return;
 
     try {
       const formData = new FormData();
@@ -32,14 +45,15 @@ function App() {
       formData.append("content", content);
       if (image) formData.append("image", image);
 
-      await axios.post(`${BASE_URL}/posts/`, formData, {
+      await axios.post(`${BASE_URL}/posts`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       setTitle("");
       setContent("");
       setImage(null);
-      fetchPosts();
+      setPreview(null);
+      fetchPosts(); // Refresh posts
     } catch (error) {
       console.error("Error creating post:", error);
     }
@@ -68,25 +82,24 @@ function App() {
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          style={{
-            padding: "10px",
-            borderRadius: "5px",
-            border: "1px solid #ccc",
-          }}
+          style={{ padding: "10px", borderRadius: "5px", border: "1px solid #ccc" }}
           required
         />
         <textarea
           placeholder="Content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          style={{
-            padding: "10px",
-            borderRadius: "5px",
-            border: "1px solid #ccc",
-          }}
+          style={{ padding: "10px", borderRadius: "5px", border: "1px solid #ccc" }}
           required
         />
-        <input type="file" onChange={(e) => setImage(e.target.files[0])} />
+        <input type="file" onChange={handleImageChange} />
+        {preview && (
+          <img
+            src={preview}
+            alt="Preview"
+            style={{ width: "100%", maxHeight: "200px", objectFit: "cover", borderRadius: "8px" }}
+          />
+        )}
         <button
           type="submit"
           style={{
@@ -127,30 +140,11 @@ function App() {
               <img
                 src={post.image_url}
                 alt="Post"
-                style={{
-                  width: "100%",
-                  borderRadius: "8px",
-                  marginTop: "10px",
-                }}
+                style={{ width: "100%", borderRadius: "8px", marginTop: "10px" }}
               />
             )}
           </div>
         ))}
-      </div>
-
-      {/* Favorite Song Section */}
-      <div style={{ marginTop: "40px", textAlign: "center" }}>
-        <h2>🎶 My Favorite Song</h2>
-        <iframe
-          width="560"
-          height="315"
-          src="https://www.youtube.com/embed/PChRVIbU1-Q?autoplay=0&rel=0"
-          title="YouTube video player"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          style={{ borderRadius: "10px", marginTop: "15px" }}
-        ></iframe>
       </div>
     </div>
   );
